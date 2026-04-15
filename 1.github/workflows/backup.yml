@@ -1,0 +1,38 @@
+name: YNAB Backup
+
+on:
+  schedule:
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+    inputs:
+      full_backup:
+        description: '是否执行全量备份'
+        required: false
+        default: false
+        type: boolean
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      YNAB_TOKEN: ${{ secrets.YNAB_TOKEN }}
+      GITHUB_PAT: ${{ secrets.DATA_REPO_PAT }}
+      DATA_REPO: ${{ secrets.DATA_REPO }}
+      DATA_REPO_BRANCH: main
+      FULL_BACKUP: ${{ github.event_name == 'workflow_dispatch' && inputs.full_backup || 'false' }}
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+
+      - name: 安装 Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+
+      - name: 安装依赖
+        run: pip install -r requirements.txt
+
+      - name: 执行备份
+        run: python backup.py
